@@ -14,7 +14,7 @@ class BaseModel(models.Model):
 class Category(BaseModel):
     name = models.CharField(max_length=255)
     sub_category = models.ForeignKey('self',on_delete=models.CASCADE, related_name='categories',null=True,blank=True)
-    image = models.ImageField(upload_to='category/images')
+    image = models.ImageField(upload_to='images/category')
 
     def __str__(self):
         return self.name
@@ -85,5 +85,5 @@ class ProductItem(BaseModel):
 
 class ProductImage(BaseModel):
     product_item = models.ForeignKey(ProductItem, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='product/images')
+    image = models.ImageField(upload_to='images/productItem')
 
