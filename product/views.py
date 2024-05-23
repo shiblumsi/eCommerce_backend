@@ -1,10 +1,10 @@
 from django.shortcuts import render
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .serializers import ProductSerializer, BrandSerializer, CategorySerializer, SizeSerializer, ColorSerializer
+from .serializers import ProductSerializer, BrandSerializer, CategorySerializer, SizeSerializer,ProductDetailsSerializer, ColorSerializer,ProductListSerializer
 from .models import Product, Category, Brand, Size, Color
 
 
@@ -38,5 +38,16 @@ class ProductCreateView(APIView):
             # Log the invalid data
             print("Invalid data:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductListView(ListAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductListSerializer
+
+
+class ProductDetailView(RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductDetailsSerializer
+    lookup_field = 'id'
 
 

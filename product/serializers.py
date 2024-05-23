@@ -55,3 +55,21 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
     
+class ProductListSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    brand = BrandSerializer()
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'is_active', 'category', 'brand']
+
+
+
+class ProductDetailsSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    brand = BrandSerializer()
+    product_items = ProductItemSerializer(many=True)
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'description', 'is_active', 'category', 'brand', 'product_items']
+    
+    
