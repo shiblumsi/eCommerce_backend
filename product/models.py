@@ -1,14 +1,5 @@
 from django.db import models
-import uuid
-# Create your models here.
-
-class BaseModel(models.Model):
-    uid = models.UUIDField(default=uuid.uuid4, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+from ecommerce_backend.utils import BaseModel
 
 
 class Category(BaseModel):
@@ -55,8 +46,7 @@ class Product(BaseModel):
 
     def __str__(self):
         return self.name
-    
-    
+
 
 
 class ProductItem(BaseModel):
