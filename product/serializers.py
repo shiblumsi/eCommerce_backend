@@ -8,11 +8,31 @@ class BrandSerializer(serializers.ModelSerializer):
         model = Brand
         fields = ['name']
 
+    def validate_name(self, value):
+        if Brand.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Brand Name Already Exists")
+        return value
+
+    def create(self, validated_data):
+        name = validated_data.pop('name')
+        brand = Brand.objects.create(name=name)
+        return brand
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['name']
+
+    def validate_name(self, value):
+        if Category.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Category Name Already Exists")
+        return value
+
+    def create(self, validated_data):
+        name = validated_data.pop('name')
+        category = Category.objects.create(name=name)
+        return category
 
 
 class ColorSerializer(serializers.ModelSerializer):
@@ -20,11 +40,31 @@ class ColorSerializer(serializers.ModelSerializer):
         model = Color
         fields = ['name']
 
+    def validate_name(self, value):
+        if Color.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Color Name Already Exists")
+        return value
+
+    def create(self, validated_data):
+        name = validated_data.pop('name')
+        color = Color.objects.create(name=name)
+        return color
+
 
 class SizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Size
         fields = ['name']
+
+    def validate_name(self, value):
+        if Size.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("Size Name Already Exists")
+        return value
+
+    def create(self, validated_data):
+        name = validated_data.pop('name')
+        size = Size.objects.create(name=name)
+        return size
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
