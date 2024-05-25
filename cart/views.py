@@ -1,10 +1,12 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView,CreateAPIView, RetrieveAPIView,UpdateAPIView
-from .serializers import CartItemSerializer,CartSerializer,IncreseDecreseQuantity
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView,CreateAPIView, RetrieveAPIView,UpdateAPIView, DestroyAPIView
+from rest_framework.views import APIView
+from .serializers import CartItemSerializer,CartSerializer,IncreaseDecreaseQuantity, CouponSerializer, CouponCodeSerializer
 from django.shortcuts import get_object_or_404
-from .models import CartItem, Cart
+from .models import CartItem, Cart, Coupon
 from product.models import ProductItem
 from rest_framework.response import Response
 from rest_framework import status
+
 
 class AddToCartView(CreateAPIView):
     serializer_class = CartItemSerializer
@@ -39,8 +41,34 @@ class AddToCartView(CreateAPIView):
                 quantity=quantity_to_add
             )
             serializer.instance = cart_item
-
         return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
+
+
+
+class IncreaseQuantity(APIView):
+
+    def post(self, request, *args, **kwargs):
+        cart_item_id = self.kwargs.get("pk")
+        cart_item = get_object_or_404(CartItem, pk=cart_item_id)
+        
+        cart_item.quantity += 1
+        cart_item.save()
+        return Response({"message": "Quantity increased", "quantity": cart_item.quantity}, status=status.HTTP_200_OK)
+
+
+class DecreaseQuantity(APIView):
+
+    def post(self, request, *args, **kwargs):
+        cart_item_id = self.kwargs.get("pk")
+        cart_item = get_object_or_404(CartItem, pk=cart_item_id)
+
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            cart_item.save()
+            return Response({"message": "Quantity decreased", "quantity": cart_item.quantity}, status=status.HTTP_200_OK)
+        else:
+            cart_item.delete()
+            return Response({"message": "Cart item deleted because quantity reached 0"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class CartView(RetrieveAPIView):
@@ -52,44 +80,37 @@ class CartView(RetrieveAPIView):
         return cart
 
 
-class IncreaseQuantity(UpdateAPIView):
-    serializer_class = IncreseDecreseQuantity
+class RemoveCartItemView(APIView):
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        cart_item_id = self.kwargs.get('pk')
+        cart_item = get_object_or_404(CartItem, id=cart_item_id, cart__user=user)
+        cart_item.delete()
+        return Response({"message": "Cart item removed successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class DeleteCartView(APIView):
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        cart = get_object_or_404(Cart, user=user)
+        CartItem.objects.filter(cart=cart).delete()
+        cart.coupon = None
+        cart.update_total()
+        return Response({"message": "Cart deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CouponListCreateView(ListCreateAPIView):
+    queryset = Coupon.objects.all()
+    serializer_class = CouponSerializer
+
+
+class ApplyCouponView(UpdateAPIView):
+    serializer_class = CartSerializer
+    queryset = Cart.objects.all()
 
     def get_object(self):
-        kwargs = {
-            "pk": self.kwargs.get("pk", None)
-        }
-        cart_item = get_object_or_404(CartItem, **kwargs)
-        return cart_item
+        return Cart.objects.get(user=self.request.user)
 
-    def perform_update(self, serializer):
-        cart_item = self.get_object()
-        cart_item.quantity += 1
-        cart_item.save()
-        
-        serializer.instance = cart_item
-        serializer.save()
-
-
-class DecreaseQuantity(UpdateAPIView):
-    serializer_class = IncreseDecreseQuantity
-
-    def get_object(self):
-        kwargs = {
-            "pk": self.kwargs.get("pk", None)
-        }
-        cart_item = get_object_or_404(CartItem, **kwargs)
-        return cart_item
-
-    def perform_update(self, serializer):
-        cart_item = self.get_object()
-        cart_item.quantity -= 1
-
-        if cart_item.quantity <= 0:
-            cart_item.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            cart_item.save()
-            serializer.instance = cart_item
-            serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+   

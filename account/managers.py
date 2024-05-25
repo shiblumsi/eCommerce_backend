@@ -32,4 +32,5 @@ class CustomUserManager(BaseUserManager):
     def create_customer(self, email, password, **extra_fields):
         """Create and save a customer with the given email and password."""
         extra_fields.setdefault("is_customer", True)
+        extra_fields.setdefault("is_active", True)
         return self.create_user(email, password, **extra_fields)
