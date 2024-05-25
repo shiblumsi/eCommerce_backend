@@ -9,11 +9,6 @@ from rest_framework import status
 class AddToCartView(CreateAPIView):
     serializer_class = CartItemSerializer
     queryset = CartItem.objects.all()
-    
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     queryset = CartItem.objects.filter(cart__user=user)
-    #     return queryset
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -21,18 +16,31 @@ class AddToCartView(CreateAPIView):
         product_item_id = self.request.data.get('product_item')
         product_item_obj = get_object_or_404(ProductItem, pk=product_item_id)
 
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            product_item=product_item_obj,
-            defaults={'quantity': self.request.data.get('quantity')}
-        )
+        # Check if the cart item already exists
+        cart_item = CartItem.objects.filter(cart=cart, product_item=product_item_obj).first()
 
-        if not created:
-            cart_item.quantity += int(self.request.data.get('quantity'))
+        # Get the quantity to add, default to 1 if quantity is not provided or blank
+        quantity_to_add = self.request.data.get('quantity', 1)
+        if quantity_to_add in [None, '']:
+            quantity_to_add = 1
+        else:
+            quantity_to_add = int(quantity_to_add)
+
+        if cart_item:
+            # If it exists, update the quantity
+            cart_item.quantity += quantity_to_add
             cart_item.save()
+            serializer.instance = cart_item
+        else:
+            # If it does not exist, create a new cart item
+            cart_item = CartItem.objects.create(
+                cart=cart,
+                product_item=product_item_obj,
+                quantity=quantity_to_add
+            )
+            serializer.instance = cart_item
 
-        serializer.instance = cart_item
-        serializer.save()
+        return Response(CartItemSerializer(cart_item).data, status=status.HTTP_201_CREATED)
 
 
 class CartView(RetrieveAPIView):
@@ -43,6 +51,7 @@ class CartView(RetrieveAPIView):
         cart = get_object_or_404(Cart, user=user)
         return cart
 
+
 class IncreaseQuantity(UpdateAPIView):
     serializer_class = IncreseDecreseQuantity
 
@@ -51,8 +60,6 @@ class IncreaseQuantity(UpdateAPIView):
             "pk": self.kwargs.get("pk", None)
         }
         cart_item = get_object_or_404(CartItem, **kwargs)
-        print(cart_item.quantity)
-        
         return cart_item
 
     def perform_update(self, serializer):
@@ -72,18 +79,17 @@ class DecreaseQuantity(UpdateAPIView):
             "pk": self.kwargs.get("pk", None)
         }
         cart_item = get_object_or_404(CartItem, **kwargs)
-        print(cart_item.quantity)
-        
         return cart_item
 
     def perform_update(self, serializer):
         cart_item = self.get_object()
         cart_item.quantity -= 1
-        
+
         if cart_item.quantity <= 0:
             cart_item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             cart_item.save()
-        
-        serializer.instance = cart_item
-        serializer.save()
+            serializer.instance = cart_item
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -10,4 +10,4 @@ class CartModelAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemModelAdmin(admin.ModelAdmin):
-    list_display = ['uid','cart','product_item','quantity']
+    list_display = ['id','uid','cart','product_item','quantity']
