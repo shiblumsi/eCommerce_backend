@@ -32,6 +32,14 @@ class Cart(BaseModel):
         self.payable_amount = self.total - self.discount
         super().save(*args, **kwargs)
 
+    def clean_cart(self):
+        self.cart_items.all().delete()
+        self.total = 0
+        self.discount = 0
+        self.payable_amount = 0
+        self.coupon = None
+        self.save()
+
 
 
 class CartItem(BaseModel):
